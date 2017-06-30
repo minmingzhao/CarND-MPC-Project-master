@@ -1,5 +1,53 @@
 # CarND-Controls-MPC
-Self-Driving Car Engineer Nanodegree Program
+This is my 5th project for Term 2 at Self-Driving Car Engineer Nanodegree Program. 
+The purpose of this project is to use another method (MPC, model predictive control) besides previous learnt PID control, to optimize the steering and throttle command so as to ensure simulator vehicle stay on track while maintaining good cruise speed. 
+
+The MPC solution here, follows the starter code and almost entire code structure based on the [MPC quiz solution](https://github.com/udacity/CarND-MPC-Quizzes/tree/master/mpc_to_line). 
+
+### The key steps of MPC is 
+
+1. Set N and dt.
+2. Fit the polynomial to the waypoints.
+3. Calculate initial cross track error and orientation error values.
+4. Define the components of the cost function (state, actuators, etc). You may use the methods previously discussed or make up something, up to you!
+5. Define the model constraints. These are the state update equations defined in the Vehicle Models module.
+
+The kinematic model includes the vehicle position x, y, psi (orientation), velocity and cte (Cross track error) and psi error. The actuator control include steering command and throttle command. We calculate the current state based on previous state and the previous control. The update equation is given in the lecture. 
+
+[MPC_update_equation.png]: ./MPC_update_equation.png
+![alt text][MPC_update_equation.png]
+
+Where the psi_desired_t is arctan(f'(x_t)). 
+
+#### Ipopt
+The key piece is that we used [Ipopt](https://projects.coin-or.org/Ipopt/) for control input optmization solution. Ipopt is able to find local optimal values even for non-linear problem while keeping the constraints set directly to the actuators and constraints defined by the heicle model. However this requires computation of jacobian and hessian matrix, which we could get them from CppAD libray. 
+
+#### CppAD
+[CppAD](https://www.coin-or.org/CppAD/) libray is used for automatic differentiation without manual computation of derivatives. 
+
+#### Timestep Length and Elapsed Duration (N & dt)
+#### Model Predictive Control with Latency
+N and dt selection in this code: N = 10 and dt = 0.1. I tried N for 20, 10, 5 and only 10 make consistent match on the track, otherwise the vehicle will fall off track. I selecte dt = 0.1 because I could simply apply the control input to next state use by assigning to next time stamp because the requirement of latency of 100ms. 
+
+#### Polynomial Fitting and MPC Preprocessing
+The waypoints were transformed from local vehicle coordinates to global coordinates. 
+
+#### Tuning of each term in cost function. 
+The cost function contains the terms below: 
+1. cte^2 : error term of cross track error. 
+2. error of psi ^2: error term of steering angle. 
+3. error of vehicle speed verse ref vehicle speed: error term of velocity to resolve stop vehicle issue. . 
+4. psi ^ 2: for driving comfort. 
+5. acceleration ^ 2: for driving comfort. 
+6. acceleration * psi: most driver won't accelerate and steer at the same time except racing drivers! 
+7. delta(psi): consistent control input, for driving comfort. 
+8. delta(acceleration): consistent control input, for driving comfort. 
+
+We could assign different factors to each of the terms above to magnify the significant of each term if neccessery. I notice some of them are not critical if assign 100 or 3000. Manual trials have been tried and it seems to work okay to make vehicle on the track at most of 70mph (reference velocity). 
+
+#### Watchout
+One note is the update equation for this particular simulator requires the steering angle opposite: normally left steering takes positive value and right as negative value, while this simulator takes the opposite. Hence the update equation of psi from `psi_[t+1] = psi[t] + v[t] / Lf * delta[t] * dt` become `psi_[t+1] = psi[t] - v[t] / Lf * delta[t] * dt`. Without this fix, the simulator will definitely run off the track! 
+
 
 ---
 
