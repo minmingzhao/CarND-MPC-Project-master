@@ -102,6 +102,7 @@ int main() {
           vector<double> waypoints_x;
           vector<double> waypoints_y;
           
+          //transform the local vehicle coordinates to global coordinates. 
           for (int i = 0; i < ptsx.size();i++){
             double dx = ptsx[i] - px;
             double dy = ptsy[i] - py; 
